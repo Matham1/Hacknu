@@ -1,0 +1,21 @@
+version: "2"
+sql: 
+  - engine: "postgresql"
+    queries: "internal/db/query/"
+    schema: "internal/db/migrations/"
+    gen:
+      go:
+        package: "sqlc"
+        out: "internal/db/sqlc"
+        sql_package: "pgx/v5"
+        overrides:
+          - db_type: "bigint"
+            go_type: "int64"
+          - db_type: "text"
+            go_type: "string"
+          - db_type: "timestamp"
+            go_type: "time.Time"
+          - db_type: "timestamptz"
+            go_type: "time.Time"
+          - db_type: "integer"
+            go_type: "int32"

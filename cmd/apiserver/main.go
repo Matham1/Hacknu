@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/abdirakhman/comp-prog-kz/internal/app/apiserver"
+	"github.com/abd-rakhman/qysqa-back/internal/app/apiserver"
 )
 
 func main() {

@@ -4,28 +4,23 @@ import (
 	"encoding/json"
 	"net/http"
 
+	db "github.com/abd-rakhman/qysqa-back/internal/db/sqlc"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
 type server struct {
-	router *mux.Router
-	logger *logrus.Logger
-}
-
-type Submission struct {
-	UserId    int    `json:"userId"`
-	Code      string `json:"code"`
-	Stdin     string `json:"stdin"`
-	Uuid      string `json:"uuid"`
-	SessionId string `json:"sessionId"`
+	router   *mux.Router
+	logger   *logrus.Logger
+	database *db.Queries
 }
 
 // Constructor of new server
-func newServer() *server {
+func newServer(database *db.Queries) *server {
 	s := &server{
-		router: mux.NewRouter(),
-		logger: logrus.New(),
+		router:   mux.NewRouter(),
+		logger:   logrus.New(),
+		database: database,
 	}
 	s.configureRouter()
 	return s
@@ -36,10 +31,13 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) configureRouter() {
-	LoadData()
-	s.router.HandleFunc("/read", homeHandler).Methods("GET")
-	s.router.HandleFunc("/test", TestHandler)
-	s.router.HandleFunc("/test/check", CheckHandler) // Register the new endpoint
+	s.router.HandleFunc("/", homeHandler).Methods("GET")
+	s.router.HandleFunc("/create/", s.createContest).Methods("POST")
+	s.router.HandleFunc("/last-contests/", s.getLastContestsHandler).Methods("GET")
+}
+
+func homeHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Hello, World!"))
 }
 
 func (s *server) respond(w http.ResponseWriter, _ *http.Request, code int, data interface{}) {

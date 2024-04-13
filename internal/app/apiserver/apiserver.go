@@ -1,9 +1,13 @@
 package apiserver
 
 import (
+	"context"
+	"encoding/json"
 	"log"
 	"net/http"
-	"encoding/json"
+
+	"github.com/abd-rakhman/qysqa-back/internal/db/sqlc"
+	"github.com/jackc/pgx/v5"
 )
 
 // Define the request structure
@@ -29,7 +33,7 @@ func CheckHandler(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Implement logic to check correctness based on req.ID and req.ChosenOption
 	// For now, let's assume the chosen option is correct if it's equal to the ID (just for demonstration)
-	
+
 	// Find the question by ID
 	questionid := -1
 	var qcorrect int
@@ -55,7 +59,6 @@ func CheckHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Check if the chosen option is correct
 	isCorrect := req.ChosenOption == qcorrect
-	
 
 	// Prepare the response
 	res := CheckResponse{IsCorrect: isCorrect}
@@ -72,7 +75,27 @@ func CheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func Start(config AppConfig) error {
-	srv := newServer()
-	log.Printf("Server is listening on port %s...\n", config.BindAddr)
-	return http.ListenAndServe(config.BindAddr, srv)
+	db, closeDB, err := connectToDatabase(config.DATABASE_URL)
+	if err != nil {
+		return err
+	}
+	defer closeDB()
+
+	srv := newServer(db)
+	log.Printf("Server is listening on port %s...\n", config.BIND_ADDRESS)
+	return http.ListenAndServe(config.BIND_ADDRESS, srv)
+}
+
+func connectToDatabase(databaseUrl string) (*sqlc.Queries, func(), error) {
+	ctx := context.Background()
+
+	conn, err := pgx.Connect(ctx, databaseUrl)
+	if err != nil {
+		return nil, nil, err
+	}
+	close := func() {
+		conn.Close(ctx)
+	}
+
+	return sqlc.New(conn), close, nil
 }

@@ -1,12 +1,14 @@
 # comp-prog-kz
 
-Setup
-
-Setup the rabbitmq docker container by using the Dockerfile with the following command
+Setup the project (Go language and dependencies should be already installed):
 ```bash
-docker build -t rabbitmq .
-docker run -d --name rabbitmq-server -p 5672:5672 -p 15672:15672 rabbitmq
+docker build -t go-image .
+docker compose up
 ```
+
+Project Overview: 
+1. golang-migrate is installed for migration control. 
+2. Server works with SQLC tool to compile and run database queries.
 
 To run the code, write the following command:
 ```bash

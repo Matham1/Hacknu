@@ -1,17 +1,13 @@
-# Use the official RabbitMQ image as the base image
-FROM rabbitmq:latest
+FROM golang:1.21.6-alpine3.18
 
-# Optionally, you can customize the RabbitMQ configuration by providing a custom configuration file
-# COPY rabbitmq.conf /etc/rabbitmq/rabbitmq.conf
+WORKDIR /app
 
-# Expose the default RabbitMQ port
-EXPOSE 5672
+COPY . . 
 
-# Optionally, expose the RabbitMQ management plugin port
-EXPOSE 15672
+RUN go get -d -v ./...
 
-# You can customize the RabbitMQ environment variables if needed
-# ENV RABBITMQ_CONFIG_FILE=/etc/rabbitmq/rabbitmq.conf
+RUN go build -o api -v ./cmd/apiserver/main.go
 
-# Start RabbitMQ server
-CMD ["rabbitmq-server"]
+EXPOSE 8080
+
+CMD ["./api"]
