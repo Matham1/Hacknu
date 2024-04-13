@@ -16,14 +16,19 @@ type AppConfig struct {
 // Define the interface QuizProps
 type QuizProps struct {
 	Texts []struct {
+		ID        int `json:"id"`
 		Text      string `json:"text"`
 		Questions []struct {
+			ID int `json:"id"`
 			Question string   `json:"question"`
 			Options  []string `json:"options"`
 			Correct  int      `json:"correct"`
 		} `json:"questions"`
 	} `json:"texts"`
 }
+
+// Sample Data 
+var quizData QuizProps
 
 var config AppConfig
 
@@ -46,26 +51,46 @@ func GetConfig() AppConfig {
 	return config
 }
 
+
 // Handler function for /test endpoint
 func TestHandler(w http.ResponseWriter, r *http.Request) {
-	// Define the sample data conforming to QuizProps
-	quizData := QuizProps{
+	// Convert quizData to JSON
+	jsonData, err := json.Marshal(quizData)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Set Content-Type header
+	w.Header().Set("Content-Type", "application/json")
+
+	// Write JSON response
+	w.Write(jsonData)
+}
+
+func LoadData() {
+	quizData = QuizProps{
 		Texts: []struct {
+			ID        int `json:"id"`
 			Text      string `json:"text"`
 			Questions []struct {
+				ID       int      `json:"id"`
 				Question string   `json:"question"`
 				Options  []string `json:"options"`
 				Correct  int      `json:"correct"`
 			} `json:"questions"`
 		}{
 			{
+				ID: 1,
 				Text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
 				Questions: []struct {
+					ID       int      `json:"id"`
 					Question string   `json:"question"`
 					Options  []string `json:"options"`
 					Correct  int      `json:"correct"`
 				}{
 					{
+						ID: 1,
 						Question: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
 						Options: []string{
 							"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
@@ -76,6 +101,7 @@ func TestHandler(w http.ResponseWriter, r *http.Request) {
 						Correct: 0,
 					},
 					{
+						ID: 2,
 						Question: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
 						Options: []string{
 							"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
@@ -89,17 +115,4 @@ func TestHandler(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
-
-	// Convert quizData to JSON
-	jsonData, err := json.Marshal(quizData)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	// Set Content-Type header
-	w.Header().Set("Content-Type", "application/json")
-
-	// Write JSON response
-	w.Write(jsonData)
 }

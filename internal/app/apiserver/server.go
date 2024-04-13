@@ -36,8 +36,10 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) configureRouter() {
+	LoadData()
 	s.router.HandleFunc("/read", homeHandler).Methods("GET")
 	s.router.HandleFunc("/test", TestHandler)
+	s.router.HandleFunc("/test/check", CheckHandler) // Register the new endpoint
 }
 
 func (s *server) respond(w http.ResponseWriter, _ *http.Request, code int, data interface{}) {
