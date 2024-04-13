@@ -227,37 +227,54 @@ func (q *Queries) GetContest(ctx context.Context, arg GetContestParams) (Contest
 }
 
 const getLastTwoContests = `-- name: GetLastTwoContests :many
-SELECT 
-    c.id, 
-    c.start_time, 
-    c.end_time,
-    r.id AS reading_id, r.text AS reading_text, r.created_at AS reading_created_at,
-    d.id AS diktant_id, d.text AS diktant_text,
-    s.id AS speeches_id, s.text AS speeches_text
-FROM 
-    contests c
-JOIN 
-    readings r ON c.reading_id = r.id
-JOIN 
-    diktants d ON c.diktant_id = d.id
-JOIN 
-    speeches s ON c.speeches_id = s.id
-ORDER BY 
-    c.start_time DESC
+SELECT
+  c.id AS contest_id,
+  c.start_time,
+  c.end_time,
+  r.id AS reading_id,
+  r.text AS reading_text,
+  d.id AS diktant_id,
+  d.text AS diktant_text,
+  s.id AS speech_id,
+  s.text AS speech_text,
+  json_agg(
+    json_build_object(
+      'text', rq.text,
+      'question', rq.question,
+      'variants', (
+        SELECT json_agg(
+          json_build_object(
+            'option', qv.option,
+            'is_correct', qv.is_correct,
+            'explanation', qv.explanation
+          )
+        )
+        FROM question_variants qv
+        WHERE qv.question_id = rq.id
+      )
+    )
+  ) AS questions
+FROM contests c
+JOIN readings r ON c.reading_id = r.id
+JOIN diktants d ON c.diktant_id = d.id
+JOIN speeches s ON c.speeches_id = s.id
+JOIN reading_questions rq ON rq.reading_id = r.id
+GROUP BY c.id, c.start_time, c.end_time, r.id, r.text, d.id, d.text, s.id, s.text
+ORDER BY c.start_time DESC
 LIMIT 2
 `
 
 type GetLastTwoContestsRow struct {
-	ID               int64
-	StartTime        pgtype.Timestamp
-	EndTime          pgtype.Timestamp
-	ReadingID        int64
-	ReadingText      pgtype.Text
-	ReadingCreatedAt pgtype.Timestamptz
-	DiktantID        int64
-	DiktantText      pgtype.Text
-	SpeechesID       int64
-	SpeechesText     pgtype.Text
+	ContestID   int64
+	StartTime   pgtype.Timestamp
+	EndTime     pgtype.Timestamp
+	ReadingID   int64
+	ReadingText pgtype.Text
+	DiktantID   int64
+	DiktantText pgtype.Text
+	SpeechID    int64
+	SpeechText  pgtype.Text
+	Questions   []byte
 }
 
 func (q *Queries) GetLastTwoContests(ctx context.Context) ([]GetLastTwoContestsRow, error) {
@@ -270,16 +287,16 @@ func (q *Queries) GetLastTwoContests(ctx context.Context) ([]GetLastTwoContestsR
 	for rows.Next() {
 		var i GetLastTwoContestsRow
 		if err := rows.Scan(
-			&i.ID,
+			&i.ContestID,
 			&i.StartTime,
 			&i.EndTime,
 			&i.ReadingID,
 			&i.ReadingText,
-			&i.ReadingCreatedAt,
 			&i.DiktantID,
 			&i.DiktantText,
-			&i.SpeechesID,
-			&i.SpeechesText,
+			&i.SpeechID,
+			&i.SpeechText,
+			&i.Questions,
 		); err != nil {
 			return nil, err
 		}

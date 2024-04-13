@@ -52,9 +52,7 @@ func (s *server) createContest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	s.logger.Printf("dik ", req.Diktant)
 
-	// Perform validation
 	if err := validateCreateContestRequest(req); err != nil {
 		http.Error(w, "Validation error: "+err.Error(), http.StatusBadRequest)
 		return
@@ -63,21 +61,13 @@ func (s *server) createContest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// TODO: Add transaction
-	// Create Reading
 	reading, err := s.database.CreateReading(ctx, pgtype.Text{String: req.Reading.Text, Valid: true})
 	if err != nil {
 		http.Error(w, "Failed to create reading: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Create each ReadingQuestion and its variants
 	for _, question := range req.Reading.Questions {
-		// This line of code is creating a new reading question in the database. It is calling the
-		// `CreateReadingQuestion` method on the `s.database` object, passing in the context `ctx` and a
-		// `CreateReadingQuestionParams` struct with the text of the question, the question description, and
-		// the ID of the reading to which this question belongs. The result of this operation is stored in
-		// the `questionResult` variable, and any error that occurs during the creation process is stored in
-		// the `err` variable.
 		questionResult, err := s.database.CreateReadingQuestion(ctx, sqlc.CreateReadingQuestionParams{
 			Text:      question.Text,
 			Question:  question.Question,
@@ -102,28 +92,18 @@ func (s *server) createContest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	s.logger.Println("Questions ", reading)
-
-	// Create Diktant
-	s.logger.Println("Diktant ", req.Diktant)
 	diktant, err := s.database.CreateDiktant(ctx, pgtype.Text{String: req.Diktant, Valid: true})
 	if err != nil {
 		http.Error(w, "Failed to create diktant: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	s.logger.Println("Diktant ", diktant)
-
-	// Create Speech
 	speech, err := s.database.CreateSpeech(ctx, pgtype.Text{String: req.Speeches, Valid: true})
 	if err != nil {
 		http.Error(w, "Failed to create speech: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	s.logger.Println("Speech ", speech)
-
-	// Convert time strings to pgtype.Timestamp
 	startTime, errStart := time.Parse(time.RFC3339, req.StartAt)
 	if errStart != nil {
 		http.Error(w, "Invalid start time format", http.StatusBadRequest)
@@ -135,7 +115,6 @@ func (s *server) createContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create Contest
 	contest, err := s.database.CreateContest(ctx, sqlc.CreateContestParams{
 		ReadingID:  pgtype.Int8{Int64: int64(reading.ID), Valid: true},
 		DiktantID:  pgtype.Int8{Int64: int64(diktant.ID), Valid: true},
