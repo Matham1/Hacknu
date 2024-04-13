@@ -1,3 +1,2 @@
 bindAddr: ":8080"
 logLevel: "debug"
-rabbitmq: "amqp://guest:guest@localhost:5672/"

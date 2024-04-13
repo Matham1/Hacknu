@@ -9,7 +9,6 @@ import (
 type AppConfig struct {
 	BindAddr string
 	LogLevel string
-	RabbitMQ string
 }
 
 var config AppConfig
