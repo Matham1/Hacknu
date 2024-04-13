@@ -3,16 +3,14 @@ package apiserver
 import (
 	"encoding/json"
 	"net/http"
-	"sync"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
 type server struct {
-	router        *mux.Router
-	logger        *logrus.Logger
-	messageBroker *sync.Pool
+	router *mux.Router
+	logger *logrus.Logger
 }
 
 type Submission struct {
@@ -24,11 +22,10 @@ type Submission struct {
 }
 
 // Constructor of new server
-func newServer(messageBroker *sync.Pool) *server {
+func newServer() *server {
 	s := &server{
-		router:        mux.NewRouter(),
-		logger:        logrus.New(),
-		messageBroker: messageBroker,
+		router: mux.NewRouter(),
+		logger: logrus.New(),
 	}
 	s.configureRouter()
 	return s
@@ -40,9 +37,6 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) configureRouter() {
 	s.router.HandleFunc("/", homeHandler).Methods("GET")
-	s.router.HandleFunc("/submitCode", s.submitCodeHandler()).Methods("POST")
-	s.router.HandleFunc("/ws", s.websocketHandler)
-	s.router.HandleFunc("/submitOutput", s.outputHandler).Methods("POST")
 }
 
 func (s *server) respond(w http.ResponseWriter, _ *http.Request, code int, data interface{}) {
