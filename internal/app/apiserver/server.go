@@ -34,6 +34,7 @@ func (s *server) configureRouter() {
 	s.router.HandleFunc("/", homeHandler).Methods("GET")
 	s.router.HandleFunc("/create/", s.createContest).Methods("POST")
 	s.router.HandleFunc("/last-contests/", s.getLastContestsHandler).Methods("GET")
+	s.router.HandleFunc("/contest/{id}/", s.getContestById).Methods("GET")
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {

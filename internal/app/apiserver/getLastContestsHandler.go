@@ -2,7 +2,6 @@ package apiserver
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/abd-rakhman/qysqa-back/internal/db/sqlc"
@@ -27,9 +26,7 @@ func (s *server) getLastContestsHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 type VariantResponse struct {
-	Option      string `json:"option"`
-	IsCorrect   bool   `json:"is_correct"`
-	Explanation string `json:"explanation"`
+	Option string `json:"option"`
 }
 
 type QuestionResponse struct {
@@ -59,15 +56,14 @@ type ContestResponse struct {
 	Reading   ResponseReading `json:"reading"`
 	Diktant   DiktantResponse `json:"diktant"`
 	Speech    SpeechResponse  `json:"speech"`
-	StartTime string          `json:"start_time"`
-	EndTime   string          `json:"end_time"`
+	StartTime int64           `json:"start_time"`
+	EndTime   int64           `json:"end_time"`
 }
 
 func ParseContests(contests []sqlc.GetLastTwoContestsRow) ([]ContestResponse, error) {
 	var response []ContestResponse
 	for _, contest := range contests {
 		var questions []QuestionResponse
-		fmt.Println(string(contest.Questions))
 		err := json.Unmarshal(contest.Questions, &questions)
 		if err != nil {
 			return nil, err
@@ -88,8 +84,8 @@ func ParseContests(contests []sqlc.GetLastTwoContestsRow) ([]ContestResponse, er
 				Id:   contest.SpeechID,
 				Text: contest.SpeechText.String, // Assuming the text is valid and not null
 			},
-			StartTime: contest.StartTime.Time.String(),
-			EndTime:   contest.EndTime.Time.String(),
+			StartTime: contest.StartTime.Time.UnixMilli(),
+			EndTime:   contest.EndTime.Time.UnixMilli(),
 		})
 	}
 	return response, nil

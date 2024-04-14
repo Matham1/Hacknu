@@ -73,7 +73,40 @@ INSERT INTO contests (
 ) RETURNING *;
 
 -- name: GetContest :one
-SELECT * FROM contests WHERE reading_id = $1 AND diktant_id = $2 AND speeches_id = $3;
+SELECT
+  c.id AS contest_id,
+  c.start_time,
+  c.end_time,
+  r.id AS reading_id,
+  r.text AS reading_text,
+  d.id AS diktant_id,
+  d.text AS diktant_text,
+  s.id AS speech_id,
+  s.text AS speech_text,
+  json_agg(
+    json_build_object(
+      'text', rq.text,
+      'question', rq.question,
+      'variants', (
+        SELECT json_agg(
+          json_build_object(
+            'option', qv.option,
+            'is_correct', qv.is_correct,
+            'explanation', qv.explanation
+          )
+        )
+        FROM question_variants qv
+        WHERE qv.question_id = rq.id
+      )
+    )
+  ) AS questions
+FROM contests c
+JOIN readings r ON c.reading_id = r.id
+JOIN diktants d ON c.diktant_id = d.id
+JOIN speeches s ON c.speeches_id = s.id
+JOIN reading_questions rq ON rq.reading_id = r.id
+WHERE c.id = $1  -- Replace $1 with the specific contest ID you're querying for
+GROUP BY c.id, c.start_time, c.end_time, r.id, r.text, d.id, d.text, s.id, s.text;
 
 -- name: GetLastTwoContests :many
 SELECT

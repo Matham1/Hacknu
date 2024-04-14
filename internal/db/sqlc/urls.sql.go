@@ -203,25 +203,69 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getContest = `-- name: GetContest :one
-SELECT id, reading_id, diktant_id, speeches_id, start_time, end_time FROM contests WHERE reading_id = $1 AND diktant_id = $2 AND speeches_id = $3
+SELECT
+  c.id AS contest_id,
+  c.start_time,
+  c.end_time,
+  r.id AS reading_id,
+  r.text AS reading_text,
+  d.id AS diktant_id,
+  d.text AS diktant_text,
+  s.id AS speech_id,
+  s.text AS speech_text,
+  json_agg(
+    json_build_object(
+      'text', rq.text,
+      'question', rq.question,
+      'variants', (
+        SELECT json_agg(
+          json_build_object(
+            'option', qv.option,
+            'is_correct', qv.is_correct,
+            'explanation', qv.explanation
+          )
+        )
+        FROM question_variants qv
+        WHERE qv.question_id = rq.id
+      )
+    )
+  ) AS questions
+FROM contests c
+JOIN readings r ON c.reading_id = r.id
+JOIN diktants d ON c.diktant_id = d.id
+JOIN speeches s ON c.speeches_id = s.id
+JOIN reading_questions rq ON rq.reading_id = r.id
+WHERE c.id = $1  -- Replace $1 with the specific contest ID you're querying for
+GROUP BY c.id, c.start_time, c.end_time, r.id, r.text, d.id, d.text, s.id, s.text
 `
 
-type GetContestParams struct {
-	ReadingID  pgtype.Int8
-	DiktantID  pgtype.Int8
-	SpeechesID pgtype.Int8
+type GetContestRow struct {
+	ContestID   int64
+	StartTime   pgtype.Timestamp
+	EndTime     pgtype.Timestamp
+	ReadingID   int64
+	ReadingText pgtype.Text
+	DiktantID   int64
+	DiktantText pgtype.Text
+	SpeechID    int64
+	SpeechText  pgtype.Text
+	Questions   []byte
 }
 
-func (q *Queries) GetContest(ctx context.Context, arg GetContestParams) (Contest, error) {
-	row := q.db.QueryRow(ctx, getContest, arg.ReadingID, arg.DiktantID, arg.SpeechesID)
-	var i Contest
+func (q *Queries) GetContest(ctx context.Context, id int64) (GetContestRow, error) {
+	row := q.db.QueryRow(ctx, getContest, id)
+	var i GetContestRow
 	err := row.Scan(
-		&i.ID,
-		&i.ReadingID,
-		&i.DiktantID,
-		&i.SpeechesID,
+		&i.ContestID,
 		&i.StartTime,
 		&i.EndTime,
+		&i.ReadingID,
+		&i.ReadingText,
+		&i.DiktantID,
+		&i.DiktantText,
+		&i.SpeechID,
+		&i.SpeechText,
+		&i.Questions,
 	)
 	return i, err
 }
